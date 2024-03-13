@@ -84,9 +84,17 @@ class RiskGame:
         time.sleep(1)
         territories_owned = [territory for territory, data in self.territories.items() if data['owner'] == player]
         if territories_owned:
+            num_territories = len(territories_owned)
+            total_troops_to_place = num_territories * 3
+            troops_per_territory = total_troops_to_place // num_territories
+            remaining_troops = total_troops_to_place % num_territories
             for territory in territories_owned:
-                self.territories[territory]['troops'] += 3
-            print(f"AI Player {player} has placed 3 troops on their territories.")
+                self.territories[territory]['troops'] += troops_per_territory
+            # Distribute remaining troops randomly among territories
+            for _ in range(remaining_troops):
+                territory = random.choice(territories_owned)
+                self.territories[territory]['troops'] += 1
+            print(f"AI Player {player} has placed {total_troops_to_place} troops on their territories.")
 
     def check_win_condition(self):
         owners = [data['owner'] for territory, data in self.territories.items()]
