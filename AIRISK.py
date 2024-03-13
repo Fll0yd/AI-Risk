@@ -47,10 +47,8 @@ class RiskGame:
             'Western United States': {'owner': None, 'troops': 0},
             'Yakutsk': {'owner': None, 'troops': 0},
         }
-
         self.cards = self.generate_cards()
         self.game_map = self.generate_game_map()
-        self.shuffle_and_deal_cards()
 
     def generate_cards(self):
         cards = ['territory1', 'territory2', 'action1', 'action2'] * len(self.territories)
@@ -59,7 +57,17 @@ class RiskGame:
     def generate_game_map(self):
         return {territory: None for territory in self.territories}
 
-    def shuffle_and_deal_cards(self):
+    def distribute_territories(self):
+        distribution_choice = input("How do you want to distribute territories? Enter 'random' for random distribution or 'turns' for taking turns: ")
+        if distribution_choice.lower() == 'random':
+            self.random_distribution()
+        elif distribution_choice.lower() == 'turns':
+            self.claim_territories()
+        else:
+            print("Invalid choice. Defaulting to random distribution.")
+            self.random_distribution()
+
+    def random_distribution(self):
         deck = list(self.territories.keys())
         random.shuffle(deck)
         num_players = len(self.players)
@@ -69,12 +77,35 @@ class RiskGame:
                 territory = deck.pop(0)
                 self.players[player].append(territory)
                 self.territories[territory]['owner'] = player
-                self.territories[territory]['troops'] = random.randint(1, 3)
+
+    def claim_territories(self):
+        deck = list(self.territories.keys())
+        random.shuffle(deck)
+        while deck:
+            for player in self.players:
+                if deck:
+                    territory = deck.pop(0)
+                    self.players[player].append(territory)
+                    self.territories[territory]['owner'] = player
+
+    def place_initial_armies(self):
+        initial_armies = {2: 40, 3: 35, 4: 30, 5: 25, 6: 20}
+        num_armies = initial_armies[len(self.players)]
+        for player in self.players:
+            territories_owned = self.players[player]
+            for territory in territories_owned:
+                if num_armies > 0:
+                    self.territories[territory]['troops'] += 1
+                    num_armies -= 1
 
     def start_game(self):
+        self.distribute_territories()
+        self.place_initial_armies()
+
         while not self.check_win_condition():
             for player in self.players:
                 self.ai_turn(player)
+
         print(f"{self.check_win_condition()} has won the game!")
         for territory, data in self.territories.items():
             print(f"{territory}: {data['owner']} owns it with {data['troops']} troops.")
@@ -82,24 +113,18 @@ class RiskGame:
     def ai_turn(self, player):
         print(f"AI Player {player} is deploying troops...")
         time.sleep(1)
-        territories_owned = [territory for territory, data in self.territories.items() if data['owner'] == player]
-        if territories_owned:
-            num_territories = len(territories_owned)
-            total_troops_to_place = num_territories * 3
-            troops_per_territory = total_troops_to_place // num_territories
-            remaining_troops = total_troops_to_place % num_territories
-            for territory in territories_owned:
-                self.territories[territory]['troops'] += troops_per_territory
-            # Distribute remaining troops randomly among territories
-            for _ in range(remaining_troops):
-                territory = random.choice(territories_owned)
-                self.territories[territory]['troops'] += 1
-            print(f"AI Player {player} has placed {total_troops_to_place} troops on their territories.")
+        territories_owned = self.players[player]
+        num_territories = len(territories_owned)
+        total_troops_to_place = num_territories // 3
+        for _ in range(total_troops_to_place):
+            territory = random.choice(territories_owned)
+            self.territories[territory]['troops'] += 1
+        print(f"AI Player {player} has placed {total_troops_to_place} troops on their territories.")
 
     def check_win_condition(self):
-        owners = [data['owner'] for territory, data in self.territories.items()]
         for player in self.players:
-            if owners.count(player) == len(self.territories):
+            territories_owned = self.players[player]
+            if len(territories_owned) == len(self.territories):
                 return player
         return None
 
