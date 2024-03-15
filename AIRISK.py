@@ -121,6 +121,38 @@ class RiskGame:
             self.territories[territory]['troops'] += 1
         print(f"AI Player {player} has placed {total_troops_to_place} troops on their territories.")
 
+        print(f"AI Player {player} is attacking...")
+        time.sleep(1)
+        for territory in territories_owned:
+            enemy_territories = self.get_neighboring_enemy_territories(territory)
+            if enemy_territories:
+                self.attack(territory, random.choice(enemy_territories))
+
+        print(f"AI Player {player} is fortifying...")
+        time.sleep(1)
+        for territory in territories_owned:
+            friendly_territories = self.get_neighboring_friendly_territories(territory)
+            if friendly_territories:
+                self.fortify(territory, random.choice(friendly_territories))
+
+    def attack(self, from_territory, to_territory):
+        if self.territories[from_territory]['troops'] > 1:
+            self.territories[from_territory]['troops'] -= 1
+            if self.territories[to_territory]['troops'] == 0:
+                self.territories[to_territory]['owner'] = self.territories[from_territory]['owner']
+                self.territories[to_territory]['troops'] = 1
+
+    def fortify(self, from_territory, to_territory):
+        if self.territories[from_territory]['troops'] > 1:
+            self.territories[from_territory]['troops'] -= 1
+            self.territories[to_territory]['troops'] += 1
+
+    def get_neighboring_enemy_territories(self, territory):
+        return [neighbor for neighbor in self.game_map[territory] if self.territories[neighbor]['owner'] != self.territories[territory]['owner']]
+
+    def get_neighboring_friendly_territories(self, territory):
+        return [neighbor for neighbor in self.game_map[territory] if self.territories[neighbor]['owner'] == self.territories[territory]['owner']]
+    
     def check_win_condition(self):
         for player in self.players:
             territories_owned = self.players[player]
