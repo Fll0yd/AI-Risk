@@ -124,12 +124,18 @@ class RiskGame:
             types = [card['type'] for card in self.player_cards[player][:3]]
             territories = [card['territory'] for card in self.player_cards[player][:3]]
             if len(set(types)) == 1 or len(set(types)) == 3:  # Check if the first three cards are either all the same type or all different types
-                self.player_cards[player] = self.player_cards[player][3:]
-                self.trade_in_count += 1
-                bonus_troops = max(4, self.trade_in_count * 2)  # The number of troops received depends on the number of sets traded in so far in the game
-                if all(territory in self.players[player] for territory in territories):  # Check if the player owns all of the territories on the cards
-                    bonus_troops += 2  # Add 2 bonus troops
-                return bonus_troops
+                trade_choice = input(f"Player {player}, do you want to trade in cards for troops? (yes/no): ")
+                if trade_choice.lower() == 'yes':
+                    self.player_cards[player] = self.player_cards[player][3:]
+                    self.trade_in_count += 1
+                    bonus_troops = max(4, self.trade_in_count * 2)  # The number of troops received depends on the number of sets traded in so far in the game
+                    if all(territory in self.players[player] for territory in territories):  # Check if the player owns all of the territories on the cards
+                        bonus_troops += 2  # Add 2 bonus troops
+                    return bonus_troops
+                elif trade_choice.lower() == 'no':
+                    return 0  # Player chooses not to trade in cards, return 0 bonus troops
+                else:
+                    print("Invalid choice. Defaulting to not trading cards.")
         return 0
 
     def generate_game_map(self):
@@ -172,14 +178,34 @@ class RiskGame:
 
     def place_initial_armies(self):
         initial_armies = {2: 40, 3: 35, 4: 30, 5: 25, 6: 20}
-        num_armies = initial_armies[len(self.players)]
-        while num_armies > 0:
-            for player in self.players:
-                territories_owned = self.players[player]
-                for territory in territories_owned:
-                    if num_armies > 0:
-                        self.territories[territory]['troops'] += 1
-                        num_armies -= 1
+        num_players = len(self.players)
+        total_armies = initial_armies[num_players]
+        for player in self.players:
+            territories_owned = self.players[player]
+            print(f"Player {player}, you have {total_armies} troops to place.")
+            while total_armies > 0:
+                print(f"Remaining troops: {total_armies}")
+                territory = input("Enter the name of the territory where you want to place your troops (or type 'done' to end the setup phase): ")
+                if territory.lower() == 'done':
+                    break
+                if territory not in territories_owned:
+                    print("Invalid territory. You can only place troops on territories you own.")
+                    continue
+                try:
+                    troops_to_place = input(f"Enter the number of troops you want to place on {territory} (0 to {total_armies}): ")
+                    if troops_to_place.lower() == 'done':
+                        break
+                    troops_to_place = int(troops_to_place)
+                    if troops_to_place < 0 or troops_to_place > total_armies:
+                        print("Invalid number of troops. Please enter a number between 0 and the remaining troops.")
+                        continue
+                    if troops_to_place > 0:
+                        self.territories[territory]['troops'] += troops_to_place
+                        total_armies -= troops_to_place
+                    else:
+                        print("Skipping troop placement for this territory.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
                         
     def start_game(self):
         print("Distributing territories...")
@@ -276,38 +302,59 @@ class RiskGame:
                 extra_troops += self.continent_values[continent]
         while extra_troops > 0:
             print(f"You have {extra_troops} troops left to place.")
-            territory = input("Enter the name of the territory where you want to place your troops: ")
+            territory = input("Enter the name of the territory where you want to place your troops (or type 'skip' to skip): ")
+            if territory.lower() == 'skip':
+                break  # Player chooses to skip troop placement
             if territory not in territories_owned:
                 print("Invalid territory. You can only place troops on territories you own.")
                 continue
-            troops_to_place = int(input("Enter the number of troops you want to place on this territory: "))
-            if troops_to_place > extra_troops:
-                print("You don't have that many troops left to place.")
-                continue
-            self.territories[territory]['troops'] += troops_to_place
-            extra_troops -= troops_to_place
+            try:
+                troops_to_place = int(input("Enter the number of troops you want to place on this territory: "))
+                if troops_to_place > extra_troops:
+                    print("You don't have that many troops left to place.")
+                    continue
+                if troops_to_place > 0:
+                    self.territories[territory]['troops'] += troops_to_place
+                    extra_troops -= troops_to_place
+                else:
+                    print("Skipping troop placement for this territory.")
+            except ValueError:
+                print("Invalid input. Please enter a number.")
             
-    def attack(self, attacking_teritory, defending_teritory):
-        if self.territories[attacking_teritory]['troops'] > 1:
-            attacking_troops = min(3, self.territories[attacking_teritory]['troops'] - 1)
-            defending_troops = min(2, self.territories[defending_teritory]['troops'])
+    def attack(self, attacking_territory, defending_territory):
+        if self.territories[attacking_territory]['troops'] > 1:
+            attacking_troops = min(3, self.territories[attacking_territory]['troops'] - 1)
+            defending_troops = min(2, self.territories[defending_territory]['troops'])
             attacker_dice = sorted([random.randint(1, 6) for _ in range(attacking_troops)], reverse=True)
-            defender_dice = sorted([random.randint(1, 6) for _ in range(defending_troops)], reverse=True)
+            while True:
+                try:
+                    num_defender_dice = int(input(f"Defender, how many dice do you want to roll? (1 or 2): "))
+                    if num_defender_dice in [1, 2]:
+                        break
+                    print("Invalid number of dice. Please enter 1 or 2.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            defender_dice = sorted([random.randint(1, 6) for _ in range(num_defender_dice)], reverse=True)
             for a, d in zip(attacker_dice, defender_dice):
                 if a > d:
-                    self.territories[defending_teritory]['troops'] -= 1
+                    self.territories[defending_territory]['troops'] -= 1
                 else:
-                    self.territories[attacking_teritory]['troops'] -= 1
-            if self.territories[defending_teritory]['troops'] == 0:
-                self.territories[defending_teritory]['owner'] = self.territories[attacking_teritory]['owner']
+                    self.territories[attacking_territory]['troops'] -= 1
+            if self.territories[defending_territory]['troops'] == 0:
+                self.territories[defending_territory]['owner'] = self.territories[attacking_territory]['owner']
                 while True:
-                    troops_to_move = int(input(f"How many troops do you want to move to {defending_teritory}? (Must be between {attacking_troops} and {self.territories[attacking_teritory]['troops'] - 1}): "))
-                    if attacking_troops <= troops_to_move <= self.territories[attacking_teritory]['troops'] - 1:
-                        break
-                    print("Invalid number of troops. Please enter a valid number.")
-                self.territories[attacking_teritory]['troops'] -= troops_to_move
-                self.territories[defending_teritory]['troops'] += troops_to_move
-                self.check_elimination(self.territories[defending_teritory]['owner'])
+                    troops_to_move = input(f"How many troops do you want to move to {defending_territory}? (0 to {attacking_troops}): ")
+                    try:
+                        troops_to_move = int(troops_to_move)
+                        if 0 <= troops_to_move <= attacking_troops:
+                            break
+                        print(f"Invalid number of troops. Please enter a number between 0 and {attacking_troops}.")
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+                if troops_to_move > 0:
+                    self.territories[attacking_territory]['troops'] -= troops_to_move
+                    self.territories[defending_territory]['troops'] += troops_to_move
+                self.check_elimination(self.territories[defending_territory]['owner'])
                 return True
         return False
 
@@ -327,22 +374,35 @@ class RiskGame:
         while True:
             valid_attack_from = [territory for territory in territories_owned if self.territories[territory]['troops'] > 1 and self.get_neighboring_enemy_territories(territory)]
             if not valid_attack_from:
-                break
+                # If there are no valid territories to attack from, ask the player if they want to continue attacking
+                continue_attack = input("Do you want to continue attacking? (yes/no): ")
+                if continue_attack.lower() != 'yes':
+                    return has_attacked if not isinstance(has_attacked, str) else False  # Return False if no attack is made during the turn
+                else:
+                    break  # If the player wants to continue attacking, break out of the loop and allow them to choose a territory to attack from
             for territory in valid_attack_from:
                 enemy_territories = self.get_neighboring_enemy_territories(territory)
                 while enemy_territories:
                     # Ask the player if they want to continue attacking
                     continue_attack = input("Do you want to continue attacking? (yes/no): ")
                     if continue_attack.lower() != 'yes':
-                        return has_attacked if not isinstance(has_attacked, str) else False
+                        return has_attacked if not isinstance(has_attacked, str) else False  # Return False if no attack is made during the turn
                     target_territory = max(enemy_territories, key=lambda t: self.territories[territory]['troops'] - self.territories[t]['troops'])
                     while self.territories[territory]['troops'] > 1 and self.territories[target_territory]['owner'] != player:
                         if target_territory in self.connections[territory]:  # Check if the target territory is adjacent to the attacking territory
-                            if self.attack(territory, target_teritory, min(3, self.territories[territory]['troops'] - 1)):
-                                has_attacked = True
-                                winner = self.check_win_condition()
-                                if winner:
-                                    return winner
+                            num_dice_to_roll = int(input(f"How many dice do you want to roll when attacking {target_territory}? (1, 2, or 3): "))
+                            if num_dice_to_roll in [1, 2, 3]:
+                                if self.attack(territory, target_territory, num_dice_to_roll):
+                                    has_attacked = True
+                                    winner = self.check_win_condition()
+                                    if winner:
+                                        return winner
+                                else:
+                                    print("Invalid number of dice. Please enter 1, 2, or 3.")
+                                    continue
+                            else:
+                                print("Invalid number of dice. Please enter 1, 2, or 3.")
+                                continue
                     enemy_territories = [t for t in enemy_territories if self.territories[t]['owner'] != player and t in self.connections[territory]]  # Only consider territories that are connected to the current territory and owned by other players
         return has_attacked if not isinstance(has_attacked, str) else False
 
@@ -376,7 +436,6 @@ class RiskGame:
         fortify_choice = input("Do you want to fortify? Enter 'yes' or 'no': ")
         if fortify_choice.lower() == 'no':
             return  # End the fortify phase if the player chooses not to fortify at all
-
         territories_owned = self.players[player]
         fortified_pairs = set()  # Keep track of fortified pairs
         for territory in territories_owned:
@@ -387,10 +446,25 @@ class RiskGame:
                     if (territory, target_territory) not in fortified_pairs and self.is_connected(territory, target_territory, player):
                         fortify_choice = input(f"Do you want to fortify {territory} to {target_territory}? Enter 'yes' or 'no': ")
                         if fortify_choice.lower() == 'yes':
-                            self.fortify(territory, target_territory)
+                            max_troops_to_move = self.territories[territory]['troops'] - 1
+                            while True:
+                                try:
+                                    troops_to_move = int(input(f"How many troops do you want to move from {territory} to {target_territory}? (Must be between 1 and {max_troops_to_move}): "))
+                                    if 1 <= troops_to_move <= max_troops_to_move:
+                                        break
+                                    print("Invalid number of troops. Please enter a valid number.")
+                                except ValueError:
+                                    print("Invalid input. Please enter a number.")
+                            self.territories[territory]['troops'] -= troops_to_move
+                            self.territories[target_territory]['troops'] += troops_to_move
                             fortified_pairs.add((territory, target_territory))  # Add the pair to the fortified pairs
                         elif fortify_choice.lower() == 'no':
-                            return  # End the fortify phase if the player chooses not to continue
+                            continue  # Skip this pair and move to the next one
+                        else:
+                            print("Invalid choice. Please enter 'yes' or 'no'.")
+                            continue  # Ask again for a valid choice
+                    else:
+                        print(f"The territories {territory} and {target_territory} are not eligible for fortification.")
 
     def get_neighboring_enemy_territories(self, territory):
         return [t for t in self.connections[territory] if self.territories[t]['owner'] != self.territories[territory]['owner']]
@@ -399,9 +473,10 @@ class RiskGame:
         return [t for t in self.connections[territory] if self.territories[t]['owner'] == self.territories[territory]['owner']]
 
     def check_win_condition(self):
-        if len(set(territory['owner'] for territory in self.territories.values())) == 1:
-            return next(iter(self.players))
-        return None
+        for player, territories in self.players.items():
+            if len(territories) == len(self.territories):
+                return player  # This player has won the game
+        return False  # No player has won yet
 
 players = ['AI Red', 'AI Blue', 'AI Green', 'AI Yellow', 'AI Black']
 players_territories = {player: [] for player in players}
