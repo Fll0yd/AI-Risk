@@ -2,8 +2,8 @@ import random
 import time
 
 class RiskGame:
-    def __init__(self, players):
-        self.players = players
+    def __init__(self, player_territories):
+        self.players = list(player_territories.keys())
         self.trade_in_count = 0
         self.territories = {
             'Alaska': {'owner': None, 'troops': 0},
@@ -48,8 +48,6 @@ class RiskGame:
             'Western United States': {'owner': None, 'troops': 0},
             'Yakutsk': {'owner': None, 'troops': 0},
         }
-        self.cards = self.generate_cards()
-        self.game_map = self.generate_game_map()
         self.adjacency_map = {
             'Alaska': ['Alberta', 'Northwest Territory', 'Kamchatka'],
             'Alberta': ['Alaska', 'Northwest Territory', 'Ontario', 'Western United States'],
@@ -92,7 +90,7 @@ class RiskGame:
             'Western Europe': ['Great Britain', 'Northern Europe', 'Southern Europe', 'North Africa'],
             'Western United States': ['Alberta', 'Ontario', 'Eastern United States', 'Central America']
         }
-        self.player_cards = {player: [] for player in players}
+        self.player_cards = {player: [] for player in self.players}
         self.continents = {
             'North America': ['Alaska', 'Alberta', 'Central America', 'Eastern United States', 'Greenland', 'Northwest Territory', 'Ontario', 'Quebec', 'Western United States'],
             'South America': ['Argentina', 'Brazil', 'Peru', 'Venezuela'],
@@ -153,12 +151,14 @@ class RiskGame:
             'New Guinea': ['Indonesia', 'Western Australia', 'Eastern Australia'],
             'Western Australia': ['Indonesia', 'New Guinea', 'Eastern Australia']
         }
+        self.player_territories = player_territories
+        self.cards = self.generate_cards()
 
     def generate_cards(self):
         types = ['Infantry', 'Cavalry', 'Artillery']
         cards = [{'territory': territory, 'type': types[i % len(types)]} for i, territory in enumerate(self.territories.keys())]
         random.shuffle(cards)
-        return cards                    
+        return cards               
 
     def trade_cards_for_troops(self, player):
         if len(self.player_cards[player]) >= 3:
@@ -179,23 +179,33 @@ class RiskGame:
                     print("Invalid choice. Defaulting to not trading cards.")
         return 0
 
-    def generate_game_map(self):
-        # Generate a dictionary representing adjacency information for each territory
+    def generate_game_map(self):    
         game_map = {}
-        for territory in self.territories:
-            game_map[territory] = [adjacent_territory for adjacent_territory in self.adjacency_map[territory]]
-        return game_map
+        for territory in self.claim_territories:
+            game_map[territory] = [adjacent_territory for adjacent_territory in game_map.get(territory, [])]
+        self.adjacency_map = game_map  # Update adjacency_map
+    
+    def choose_territory_assignment_method(self):
+        print("How would you like territories to be assigned?")
+        print("1. Official Rules: Players claim territories in a round-robin fashion.")
+        print("2. Shuffled Cards: Territories are distributed based on shuffled cards.")
+        while True:
+            choice = input("Enter your choice (1 or 2): ")
+            if choice in ['1', '2']:
+                return int(choice)
+            else:
+                print("Invalid choice. Please enter 1 or 2.")
+    
+    def assign_territories(self, method):
+        if method == 2:
+            self.random_distribution()
+        else:
+            self.claim_territories()
 
     def distribute_territories(self):
-        distribution_choice = input("How do you want to distribute territories? Enter 'random' for random distribution or 'turns' for taking turns: ")
-        if distribution_choice.lower() == 'random':
-            self.random_distribution()
-        elif distribution_choice.lower() == 'turns':
-            self.claim_territories()
-        else:
-            print("Invalid choice. Defaulting to random distribution.")
-            self.random_distribution()
-
+        method = int(input("How would you like territories to be assigned?\n1. Official Rules: Players claim territories in a round-robin fashion.\n2. Shuffled Cards: Territories are distributed based on shuffled cards.\nEnter your choice (1 or 2): "))
+        self.assign_territories(method)
+        
     def random_distribution(self):
         deck = list(self.territories.keys())
         random.shuffle(deck)
@@ -204,7 +214,7 @@ class RiskGame:
         for _ in range(territories_per_player):
             for player in self.players:
                 territory = deck.pop(0)
-                self.players[player].append(territory)
+                self.player_territories[player].append(territory)
                 self.territories[territory]['owner'] = player
 
     def claim_territories(self):
@@ -214,7 +224,7 @@ class RiskGame:
             for player in self.players:
                 if deck:
                     territory = deck.pop(0)
-                    self.players[player].append(territory)
+                    self.player_territories[player].append(territory)
                     self.territories[territory]['owner'] = player
 
     def place_initial_armies(self):
@@ -222,7 +232,7 @@ class RiskGame:
         num_players = len(self.players)
         total_armies = initial_armies[num_players]
         for player in self.players:
-            territories_owned = self.players[player]
+            territories_owned = self.player_territories[player]  # Corrected to access player territories
             print(f"Player {player}, you have {total_armies} troops to place.")
             while total_armies > 0:
                 print(f"Remaining troops: {total_armies}")
@@ -247,11 +257,11 @@ class RiskGame:
                         print("Skipping troop placement for this territory.")
                 except ValueError:
                     print("Invalid input. Please enter a number.")
-                        
+ 
     def start_game(self):
+        self.distribute_territories()
         print("Distributing territories...")
         time.sleep(1)
-        self.distribute_territories()
         print("Placing initial armies...")
         time.sleep(1)
         self.place_initial_armies()
@@ -520,7 +530,7 @@ class RiskGame:
         return False  # No player has won yet
 
 players = ['AI Red', 'AI Blue', 'AI Green', 'AI Yellow', 'AI Black']
-players_territories = {player: [] for player in players}
+player_territories = {player: [] for player in players}
 
-risk_game = RiskGame(players_territories)
+risk_game = RiskGame(player_territories)
 risk_game.start_game()
