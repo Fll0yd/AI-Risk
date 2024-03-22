@@ -50,7 +50,48 @@ class RiskGame:
         }
         self.cards = self.generate_cards()
         self.game_map = self.generate_game_map()
-        self.adjacency_map = {...}  # Initialize the game map with adjacency information
+        self.adjacency_map = {
+            'Alaska': ['Alberta', 'Northwest Territory', 'Kamchatka'],
+            'Alberta': ['Alaska', 'Northwest Territory', 'Ontario', 'Western United States'],
+            'Argentina': ['Brazil', 'Peru'],
+            'Brazil': ['Argentina', 'Peru', 'Venezuela', 'North Africa'],
+            'Central America': ['Eastern United States', 'Western United States', 'Venezuela'],
+            'China': ['Siam', 'India', 'Afghanistan', 'Ural', 'Siberia', 'Mongolia'],
+            'Congo': ['North Africa', 'East Africa', 'South Africa'],
+            'East Africa': ['Egypt', 'Congo', 'South Africa', 'Madagascar', 'Middle East', 'North Africa'],
+            'Eastern Australia': ['New Guinea', 'Western Australia'],
+            'Eastern United States': ['Western United States', 'Ontario', 'Quebec'],
+            'Egypt': ['North Africa', 'East Africa', 'Middle East', 'Southern Europe'],
+            'Great Britain': ['Iceland', 'Western Europe', 'Scandinavia', 'Northern Europe'],
+            'Greenland': ['Northwest Territory', 'Ontario', 'Quebec', 'Iceland'],
+            'Iceland': ['Greenland', 'Great Britain', 'Scandinavia'],
+            'India': ['Middle East', 'Afghanistan', 'China', 'Siam'],
+            'Indonesia': ['Siam', 'New Guinea', 'Western Australia'],
+            'Irkutsk': ['Siberia', 'Yakutsk', 'Kamchatka', 'Mongolia'],
+            'Japan': ['Kamchatka', 'Mongolia'],
+            'Kamchatka': ['Alaska', 'Yakutsk', 'Irkutsk', 'Japan', 'Mongolia'],
+            'Madagascar': ['East Africa', 'South Africa'],
+            'Middle East': ['Southern Europe', 'Ukraine', 'Afghanistan', 'India', 'East Africa', 'Egypt'],
+            'Mongolia': ['Irkutsk', 'Kamchatka', 'Japan', 'China', 'Siberia'],
+            'New Guinea': ['Indonesia', 'Western Australia', 'Eastern Australia'],
+            'North Africa': ['Brazil', 'Western Europe', 'Southern Europe', 'Egypt', 'East Africa', 'Congo'],
+            'Northern Europe': ['Western Europe', 'Great Britain', 'Scandinavia', 'Ukraine', 'Southern Europe'],
+            'Northwest Territory': ['Alaska', 'Alberta', 'Greenland', 'Ontario'],
+            'Ontario': ['Alberta', 'Western United States', 'Eastern United States', 'Quebec', 'Northwest Territory', 'Greenland'],
+            'Peru': ['Brazil', 'Argentina', 'Venezuela'],
+            'Quebec': ['Ontario', 'Eastern United States', 'Greenland'],
+            'Scandinavia': ['Iceland', 'Great Britain', 'Northern Europe', 'Ukraine'],
+            'Siam': ['China', 'India', 'Indonesia'],
+            'Siberia': ['Ural', 'Yakutsk', 'Irkutsk', 'Mongolia', 'China'],
+            'South Africa': ['East Africa', 'Congo', 'Madagascar'],
+            'Southern Europe': ['Western Europe', 'Northern Europe', 'Ukraine', 'Middle East', 'Egypt', 'North Africa'],
+            'Ukraine': ['Scandinavia', 'Northern Europe', 'Southern Europe', 'Middle East', 'Afghanistan', 'Ural'],
+            'Ural': ['Ukraine', 'Afghanistan', 'China', 'Siberia'],
+            'Venezuela': ['Central America', 'Peru', 'Brazil'],
+            'Western Australia': ['Indonesia', 'New Guinea', 'Eastern Australia'],
+            'Western Europe': ['Great Britain', 'Northern Europe', 'Southern Europe', 'North Africa'],
+            'Western United States': ['Alberta', 'Ontario', 'Eastern United States', 'Central America']
+        }
         self.player_cards = {player: [] for player in players}
         self.continents = {
             'North America': ['Alaska', 'Alberta', 'Central America', 'Eastern United States', 'Greenland', 'Northwest Territory', 'Ontario', 'Quebec', 'Western United States'],
