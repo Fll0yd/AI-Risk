@@ -1,4 +1,4 @@
-        self.territories = {
+self.territories = {
             'Alaska': {'owner': None, 'troops': 0},
             'Alberta': {'owner': None, 'troops': 0},
             'Argentina': {'owner': None, 'troops': 0},
